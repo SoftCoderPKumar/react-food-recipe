@@ -1,26 +1,99 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
+import { recipes } from "./tempList";
+import RecipeList from "./components/RecipeList";
+import RecipiDetails from "./components/RecipeDetails"
 
 class App extends Component {
+  state = {
+    recipes: recipes,
+    url: "https://www.food2fork.com/api/search?key=e45f47fb186996fc431f6a64c5ff1985",
+    base_url: "https://www.food2fork.com/api/search?key=e45f47fb186996fc431f6a64c5ff1985",
+    details_id: 35386,
+    pageIndex: 1,
+    search: '',
+    query: "&q=",
+    error: '',
+  };
+  async getRecipes() {
+    try {
+      const data = await fetch(this.state.url);
+      const jsonData = await data.json();
+      if (jsonData.recipes.length === 0) {
+        this.setState(() => {
+          return {
+            error: 'sorry, but your search did not return any results'
+          }
+        })
+      }
+      else {
+        this.setState(() => {
+          return {
+            recipes: jsonData.recipes
+          }
+        });
+      }
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  componentDidMount() {
+    this.getRecipes();
+  }
+
+  displayPage = insex => {
+    switch (insex) {
+      default:
+      case 1:
+        return <RecipeList
+          recipes={this.state.recipes}
+          handleDetails={this.handleDetails}
+          value={this.state.search}
+          handleChange={this.handleChange}
+          handleSubmit={this.handleSubmit}
+          error={this.state.error}
+        />;
+      case 0:
+        return <RecipiDetails id={this.state.details_id} handleIndex={this.handleIndex} />;
+    }
+  }
+  handleIndex = index => {
+    this.setState({
+      pageIndex: index
+    })
+  }
+
+  handleDetails = (index, id) => {
+    this.setState({
+      pageIndex: index,
+      details_id: id
+    })
+  }
+  handleChange = (e) => {
+    this.setState({
+      search: e.target.value
+    })
+
+  }
+  handleSubmit = (e) => {
+    e.preventDefault();
+    const { base_url, query, search } = this.state;
+    this.setState(() => {
+      return {
+        url: `${base_url}${query}${search}`, search: ""
+      }
+    }, () => {
+      this.getRecipes();
+    })
+
+  }
+
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
+      <React.Fragment>
+        {this.displayPage(this.state.pageIndex)}
+      </React.Fragment>
     );
   }
 }
